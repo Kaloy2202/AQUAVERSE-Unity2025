@@ -1,0 +1,18 @@
+# AquaVerse
+
+A cozy, first-person aquaculture simulation game built with Unity.
+
+## Setup
+- Unity version: 2022.3.x LTS
+- Input System: New Input System enabled
+- Controls:
+  - WASD = Move
+  - Mouse = Look
+  - E = Interact
+  - Tab = Journal
+
+## Features (in progress)
+- First-person controller
+- Quest system
+- Pond management
+- Mini-games for feed, harvest, water quality
