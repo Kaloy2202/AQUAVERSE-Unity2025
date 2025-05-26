@@ -11,10 +11,9 @@ public class DialogueManager : MonoBehaviour
     public GameObject dialoguePanel;
     public TextMeshProUGUI npcNameText;
     public TextMeshProUGUI dialogueText;
-    public Button continueButton;
 
-    [Header("Quest Offer Panel")]
-    public GameObject questOfferPanel;
+    [Header("Quest Offer (Inside Dialogue Panel)")]
+    public GameObject questOfferContainer;
     public TextMeshProUGUI questTitleText;
     public TextMeshProUGUI questDescText;
     public Button acceptButton;
@@ -22,67 +21,120 @@ public class DialogueManager : MonoBehaviour
 
     private string[] lines;
     private int currentIndex;
+    private bool dialogueActive = false;
+
+    // Quest callback delegates
+    private UnityAction onQuestAccept;
+    private UnityAction onQuestDecline;
 
     void Awake()
     {
         Instance = this;
 
-        dialoguePanel.SetActive(false);
-        questOfferPanel.SetActive(false);
-
-        continueButton.onClick.AddListener(NextLine);
+        if (dialoguePanel != null) dialoguePanel.SetActive(false);
+        if (questOfferContainer != null) questOfferContainer.SetActive(false);
     }
 
     public void StartDialogue(string npcName, string[] dialogueLines)
     {
+        if (npcNameText == null || dialogueText == null || dialoguePanel == null)
+        {
+            Debug.LogError("DialogueManager: UI references are not assigned.");
+            return;
+        }
+
         npcNameText.text = npcName;
         lines = dialogueLines;
         currentIndex = 0;
         dialogueText.text = lines[currentIndex];
+        dialogueActive = true;
 
-        UIPanelManager.Instance.ShowPanel("Dialogue");
+        dialoguePanel.SetActive(true);
+        UIManager.Instance.UnlockCursor();
+    }
+
+    void Update()
+    {
+        if (dialogueActive && Input.GetMouseButtonDown(0) && !questOfferContainer.activeSelf)
+        {
+            NextLine();
+        }
     }
 
     private void NextLine()
     {
         currentIndex++;
+
         if (currentIndex < lines.Length)
         {
             dialogueText.text = lines[currentIndex];
         }
         else
         {
-            CloseDialogue();
+            dialogueActive = false;
+
+            if (onQuestAccept != null || onQuestDecline != null)
+            {
+                ShowQuestOfferUI();
+            }
+            else
+            {
+                CloseDialogue();
+            }
         }
     }
 
-    public void ShowQuestOffer(string npcName, string questTitle, string questDesc, UnityAction onAccept, UnityAction onDecline)
+    public void QueueQuestOffer(string npcName, string questTitle, string questDesc, UnityAction acceptAction, UnityAction declineAction)
     {
-        npcNameText.text = npcName;
+        if (questTitleText == null || questDescText == null)
+        {
+            Debug.LogError("DialogueManager: Quest offer UI references are not assigned.");
+            return;
+        }
+
         questTitleText.text = questTitle;
         questDescText.text = questDesc;
+        onQuestAccept = acceptAction;
+        onQuestDecline = declineAction;
+
+        Debug.Log($"Quest from {npcName} queued: {questTitle}");
+    }
+
+    private void ShowQuestOfferUI()
+    {
+        if (questOfferContainer == null || acceptButton == null || declineButton == null)
+        {
+            Debug.LogError("DialogueManager: Quest offer UI buttons are not assigned.");
+            return;
+        }
+
+        questOfferContainer.SetActive(true);
+        Debug.Log("Showing quest offer panel");
 
         acceptButton.onClick.RemoveAllListeners();
         declineButton.onClick.RemoveAllListeners();
 
-        acceptButton.onClick.AddListener(onAccept);
-        declineButton.onClick.AddListener(onDecline);
+        acceptButton.onClick.AddListener(() =>
+        {
+            onQuestAccept?.Invoke();
+            CloseDialogue();
+        });
 
-        dialoguePanel.SetActive(false);
-        questOfferPanel.SetActive(true);
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-        FindObjectOfType<FirstPersonController>().canMove = false;
+        declineButton.onClick.AddListener(() =>
+        {
+            onQuestDecline?.Invoke();
+            CloseDialogue();
+        });
     }
 
     public void CloseDialogue()
     {
-        dialoguePanel.SetActive(false);
-        questOfferPanel.SetActive(false);
+        if (dialoguePanel != null) dialoguePanel.SetActive(false);
+        if (questOfferContainer != null) questOfferContainer.SetActive(false);
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-        FindObjectOfType<FirstPersonController>().canMove = true;
+        onQuestAccept = null;
+        onQuestDecline = null;
+
+        UIManager.Instance.LockCursor();
     }
 }

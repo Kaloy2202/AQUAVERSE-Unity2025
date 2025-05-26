@@ -13,8 +13,12 @@ public class NPCInteraction : MonoBehaviour, IInteractable
 
     void TriggerQuest()
     {
-        var quest = new Quest("Feed the Fish", "Buy feed from the shop and feed the fish in Pond A.");
+        var quest = new Quest(
+            "quest_001", // ✅ questId
+            "Feed the Fish", // ✅ title
+            "Buy feed from the shop and feed the fish in Pond A." // ✅ description
+        );
+
         QuestManager.Instance.AddQuest(quest);
     }
-
 }

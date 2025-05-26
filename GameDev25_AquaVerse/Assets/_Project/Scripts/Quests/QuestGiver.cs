@@ -9,30 +9,42 @@ public class QuestGiver : MonoBehaviour, IInteractable
     {
         if (!questToGive.isAccepted)
         {
-            DialogueManager.Instance.ShowQuestOffer(
+            DialogueManager.Instance.StartDialogue(npcName, new[]
+            {
+                "Hey Fin, your Lola left something important.",
+                "Find her old journal in the kubo. It might be the key to everything."
+            });
+
+            DialogueManager.Instance.QueueQuestOffer(
                 npcName,
                 questToGive.title,
                 questToGive.description,
-                () =>
+                acceptAction: () =>
                 {
-                    // On Accept
                     questToGive.isAccepted = true;
                     QuestManager.Instance.AddQuest(questToGive);
-                    DialogueManager.Instance.CloseDialogue();
                 },
-                () =>
+                declineAction: () =>
                 {
-                    // On Decline
-                    DialogueManager.Instance.CloseDialogue();
+                    // Player declined the quest
                 }
             );
         }
         else
         {
-            DialogueManager.Instance.StartDialogue(npcName, new[] {
-                "You're already working on that quest!",
-                "Check your journal for updates."
-            });
+            DialogueManager.Instance.QueueQuestOffer(
+                npcName,
+                questToGive.title,
+                questToGive.description,
+                () => {
+                    questToGive.isAccepted = true;
+                    QuestManager.Instance.AddQuest(questToGive);
+                },
+                () => {
+                    // Do nothing on decline
+                }
+            );
+
         }
     }
 }
